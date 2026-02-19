@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SmartToken - Hospital Booking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:"Poppins",sans-serif;
+      scroll-behavior:smooth;
+    }
+
+    body{
+      background: linear-gradient(135deg,#4e73df,#1cc88a);
+      min-height:100vh;
+      color:#333;
+    }
+
+    /* NAVBAR */
+    nav{
+      background:white;
+      padding:15px 8%;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-shadow:0 4px 15px rgba(0,0,0,0.1);
+      position:sticky;
+      top:0;
+    }
+
+    nav h2{
+      color:#4e73df;
+    }
+
+    nav ul{
+      display:flex;
+      list-style:none;
+      gap:20px;
+    }
+
+    nav ul li a{
+      text-decoration:none;
+      color:#333;
+      font-weight:500;
+      transition:0.3s;
+    }
+
+    nav ul li a:hover{
+      color:#4e73df;
+    }
+
+    /* HERO */
+    .hero{
+      text-align:center;
+      padding:60px 20px;
+      color:white;
+    }
+
+    .hero h1{
+      font-size:38px;
+      margin-bottom:10px;
+    }
+
+    .hero p{
+      opacity:0.9;
+    }
+
+    /* BOOKING CARD */
+    .card{
+      background:white;
+      max-width:420px;
+      margin:40px auto;
+      padding:30px;
+      border-radius:15px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.2);
+      animation:fadeIn 1s ease;
+    }
+
+    @keyframes fadeIn{
+      from{opacity:0; transform:translateY(20px);}
+      to{opacity:1; transform:translateY(0);}
+    }
+
+    label{
+      display:block;
+      margin-top:15px;
+      font-weight:500;
+    }
+
+    input,select{
+      width:100%;
+      padding:10px;
+      margin-top:5px;
+      border-radius:8px;
+      border:1px solid #ccc;
+      transition:0.3s;
+    }
+
+    input:focus,select:focus{
+      border-color:#4e73df;
+      box-shadow:0 0 0 2px rgba(78,115,223,0.2);
+      outline:none;
+    }
+
+    button{
+      width:100%;
+      margin-top:20px;
+      padding:12px;
+      border:none;
+      border-radius:8px;
+      background:#4e73df;
+      color:white;
+      font-weight:600;
+      cursor:pointer;
+      transition:0.3s;
+    }
+
+    button:hover{
+      background:#2e59d9;
+      transform:translateY(-2px);
+    }
+
+    #msg{
+      margin-top:15px;
+      font-weight:500;
+      text-align:center;
+    }
+
+    /* ABOUT SECTION */
+    .about{
+      background:white;
+      padding:60px 10%;
+      text-align:center;
+    }
+
+    .about h2{
+      color:#4e73df;
+      margin-bottom:15px;
+    }
+
+    footer{
+      background:#4e73df;
+      color:white;
+      text-align:center;
+      padding:15px;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <h2>🏥 SmartToken</h2>
+  <ul>
+    <li><a href="#">Home</a></li>
+    <li><a href="#booking">Booking</a></li>
+    <li><a href="#about">About</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Digital Hospital Token System</h1>
+  <p>Reduce Waiting Time. Book Your Seat Easily.</p>
+</div>
+
+<!-- BOOKING FORM -->
+<div class="card" id="booking">
+  <h3>Book Your Token</h3>
+
+  <form id="patientForm">
+    <label>Name</label>
+    <input type="text" id="name" required>
+
+    <label>Phone</label>
+    <input type="text" id="phone" required>
+
+    <label>Department</label>
+    <select id="department">
+      <option value="General">General</option>
+      <option value="Dental">Dental</option>
+      <option value="ENT">ENT</option>
+      <option value="Ortho">Ortho</option>
+    </select>
+
+    <button type="submit">Get Token</button>
+  </form>
+
+  <p id="msg"></p>
+</div>
+
+<!-- ABOUT -->
+<section class="about" id="about">
+  <h2>About Our Hospital</h2>
+  <p>
+    SmartToken Hospital provides advanced healthcare services
+    with a digital queue system. Our mission is to reduce
+    patient waiting time using modern technology.
+  </p>
+</section>
+
+<footer>
+  © 2026 SmartToken Hospital | All Rights Reserved
+</footer>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "smarttoken-5a261.firebaseapp.com",
+    databaseURL: "https://smarttoken-5a261-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "smarttoken-5a261",
+    storageBucket: "smarttoken-5a261.appspot.com",
+    messagingSenderId: "588078787732",
+    appId: "1:588078787732:web:f797d0efccfad9960a9881"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  document.getElementById("patientForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const name = document.getElementById("name").value;
+    const phone = document.getElementById("phone").value;
+    const department = document.getElementById("department").value;
+
+    db.ref("tokens").push({
+      name: name,
+      phone: phone,
+      department: department,
+      tokenTime: Date.now(),
+      served: false
+    }).then(() => {
+      document.getElementById("msg").innerText = "✅ Token generated successfully!";
+      document.getElementById("patientForm").reset();
+    }).catch((error) => {
+      document.getElementById("msg").innerText = "❌ Error: " + error.message;
+    });
+  });
+</script>
+
+</body>
+</html>

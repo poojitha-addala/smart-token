@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SmartToken Admin</title>
+  <link rel="stylesheet" href="stylecss.css">
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+</head>
+<body>
+  <h2>🩺 Admin - Patient Queue</h2>
+
+  <!-- Next Patient Button -->
+  <button id="nextBtn">👉 Notify Next Patient</button>
+  <br><br>
+
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Department</th>
+        <th>Time</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="tokenTable">
+    </tbody>
+  </table>
+
+  <script>
+    // 🔹 Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAwj-twErqMfjxT4UxNdvLjgLCeaN53m3o",
+      authDomain: "smarttoken-5a261.firebaseapp.com",
+      databaseURL: "https://smarttoken-5a261-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "smarttoken-5a261",
+      storageBucket: "smarttoken-5a261.appspot.com",
+      messagingSenderId: "588078787732",
+      appId: "1:588078787732:web:f797d0efccfad9960a9881"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const tokenTable = document.getElementById("tokenTable");
+
+    // 🔹 Realtime listener for patient queue
+    db.ref("tokens").on("value", snapshot => {
+      tokenTable.innerHTML = "";
+      let anyPending = false;
+      snapshot.forEach(child => {
+        const data = child.val();
+        const key = child.key;
+
+        if (!data.served) {
+          anyPending = true;
+          const row = `
+            <tr>
+              <td>${data.name}</td>
+              <td>${data.phone}</td>
+              <td>${data.department}</td>
+              <td>${new Date(data.tokenTime).toLocaleTimeString()}</td>
+              <td>⏳ Waiting</td>
+              <td><button onclick="markServed('${key}')">Mark as Served & SMS</button></td>
+            </tr>
+          `;
+          tokenTable.innerHTML += row;
+        }
+      });
+
+      if(!anyPending){
+        tokenTable.innerHTML = `<tr><td colspan="6">No patients in waiting queue</td></tr>`;
+      }
+    });
+
+    // 🔹 Mark as Served + Trigger SMS (using alert.js logic)
+    function markServed(key) {
+      db.ref("tokens/" + key).once("value").then(snapshot => {
+        const patient = snapshot.val();
+        if(patient){
+          // Update served status
+          db.ref("tokens/" + key).update({ served: true });
+
+          // 🔹 SMS sending logic (Twilio) directly from alert.js
+          sendSms(patient.phone, patient.name);
+
+          alert(`✅ ${patient.name} marked as served and SMS sent`);
+        } else {
+          alert("❌ Patient data not found");
+        }
+      });
+    }
+
+    // 🔹 Notify Next Patient (manual trigger)
+    document.getElementById("nextBtn").addEventListener("click", () => {
+      // Find first pending patient
+      db.ref("tokens").orderByChild("served").equalTo(false).limitToFirst(1).once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          const patient = child.val();
+          sendSms(patient.phone, patient.name);
+          alert(`📩 Next patient: ${patient.name} notified via SMS`);
+        });
+      });
+    });
+
+    // 🔹 Twilio SMS simulation function (replace with actual alert.js code)
+    function sendSms(phone, name){
+      console.log(`SMS sent to ${phone}: "Hello ${name}, you're next!"`);
+      // Replace console.log with actual Twilio API call in alert.js
+    }
+  </script>
+</body>
+</html>
